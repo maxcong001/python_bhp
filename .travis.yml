@@ -1,0 +1,19 @@
+-language: python
+-
+-# safelist
+-branches:
+-  only:
+-  - master
+-  - dev
+-
+-python:
+-  - "3.6"
+-
+-install:
+-  - pip install --pre github3.py
+-
+-os:
+-  - linux
+-
+-
+-script: sudo chmod 755 hello.py&&python hello.py
